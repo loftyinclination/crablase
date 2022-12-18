@@ -1,0 +1,53 @@
+<!-- prettier-ignore -->
+{% macro base_element(filled, base_x, base_y, number_of_bases) %}
+
+{% let x = base_x * 17 %}
+{% let y = base_y * 17 %}
+{% let y_a = number_of_bases * 17 %}
+
+<g transform="translate({{x}} calc({{y_a}}-{{y}})) rotate(45)">
+    <!-- prettier-ignore -->
+    {# first rect is here to give the user a larger target to mouse over
+    FIXME: get hover effects working
+    <rect
+        fill="transparent"
+        stroke="none"
+        z="-1"
+        x=-10
+        y=-10
+        width=20
+        height=20 />
+    #}
+    <rect
+        strokeWidth="1"
+        stroke="var(--theme-black)"
+        z="1"
+        fill=
+        {% if filled %}
+            "var(--theme-black)"
+        {$ else %}
+            "var(--theme-white)"
+        {% endif %}
+        x=-6
+        y=-6
+        width=12
+        height=12 />
+</g>
+{% endmacro %}
+
+<!-- prettier-ignore -->
+{% macro base_display(update) %}
+{% let number_of_bases = 3 %}
+
+<svg
+    style="margin-top: -0.125rem"
+    width="41"
+    height="30"
+    viewBox="-9.5 -30 41 20">
+    <!-- prettier-ignore -->
+    {% for base in update.bases %}
+        <!-- {% let filled = base.runners.len() != 0 %} -->
+        {% call base_element(false, 65 * loop.index0, loop.index, number_of_bases) %}
+    {% endfor %}
+</svg>
+{% endmacro %}

@@ -1,0 +1,117 @@
+<!-- prettier-ignore -->
+{% extends "base.html" %}
+{% import "../components/elements/base_display.html" as base_display %}
+
+<!-- prettier-ignore -->
+{% macro inning_header_impl(arrow_and_half_string,inning_one_index, pitching_team, batting_team) %}
+<header class="inning-header">
+    <h2 class="inning-header__title">
+        {{arrow_and_half_string}} of {{inning_one_index}}
+    </h2>
+    <span class="inning-header__fielders">
+        <figure class="teamname">
+            <img src="{{pitching_team.src}}" alt="{{pitching_team.emoji}}" />
+            <figcaption>{{pitching_team.name}}</figcaption>
+        </figure>
+        fielding, with <strong>{{pitching_team.pitcher_name}}</strong>
+    </span>
+    <span class="inning-header__batters">
+        <figure class="teamname">
+            <img src="{{batting_team.src}}" alt="{{batting_team.emoji}}" />
+            <figcaption>{{batting_team.name}}</figcaption>
+        </figure>
+    </span>
+</header>
+{% endmacro %}
+
+<!-- prettier-ignore -->
+{% macro inning_header(is_top, inning_one_index, away_team,home_team) %}
+{% if is_top %}
+{% call inning_header_impl("▲ Top", inning_one_index, away_team, home_team) %}
+{% else %}
+{% call inning_header_impl("▼ Bottom", inning_one_index, home_team, away_team) %}
+{%endif %}
+{% endmacro %}
+
+<!-- prettier-ignore -->
+{% block content %}
+<nav class="centered-section">
+    <a href="/season/{{season_one_indexed}}"
+        >← Back to Season {{season_one_indexed}}</a
+    >
+</nav>
+<main class="centered-section">
+    <header class="game-header">
+        <h1 class="game-date">
+            Season {{season_one_indexed}}, Day {{day_one_indexed}}
+        </h1>
+        <div class="team-vs">
+            <span class="teamname">{{away_team.name}}</span>
+            <span>vs.</span>
+            <span class="teamname">{{home_team.name}}</span>
+        </div>
+        <figure class="weather">
+            <img src="{{weather.src}}" alt="{{weather.emoji}}" />
+            <figcaption>{{weather.name}}</figcaption>
+        </figure>
+    </header>
+    <div class="options">
+        <label>
+            <input type="checkbox" />
+            Latest first
+        </label>
+        <label>
+            <input type="checkbox" />
+            Only important
+        </label>
+        <a
+            href="https://before.sibr.dev/_before/jump?redirect=%2Fleague&season={{season_zero_indexed}}&time={{start_time}}"
+        >
+            <span emoji="🩸">
+                <img
+                    class="emoji"
+                    draggable="false"
+                    alt="Remember Before?"
+                    src="https://twemoji.maxcdn.com/v/13.1.0/svg/1fa78.svg"
+                />
+            </span>
+        </a>
+    </div>
+    {% for inning in innings %}
+    <section
+        id="inning-{{inning.index}}-{% if inning.is_top %}top{% else %}bottom{% endif %}"
+    >
+        <!-- your team got incinerated? i don't care -->
+        {% call inning_header(inning.is_top, inning.index, away_team, home_team)
+        %}
+        <div class="flex flex-columns">
+            {% for update in inning.updates %}
+            <div
+                class="update-row {% if update.important %}update-row__important-update{% endif %}"
+            >
+                <span class="update-row__gamelog">{{update.gamelog}}</span>
+                <span class="update-row__timespan">{{update.timespan}}</span>
+                <span class="update-row__score"
+                    >{{update.away_team_score}} -
+                    {{update.home_team_score}}</span
+                >
+                {% match update.batter %} {% when Some with (batter) %}
+                <figure class="update-row__batter">
+                    {% if inning.is_top %}
+                    <img src="{{away_team.src}}" alt="{{away_team.emoji}}" />
+                    {% else %}
+                    <img src="{{home_team.src}}" alt="{{home_team.emoji}}" />
+                    {% endif %}
+                    <figcaption>{{batter.name}}</figcaption>
+                </figure>
+                {% else %}{% endmatch %}
+                <span class="update-row__atbat">
+                    {% call base_display::base_display(update) %}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endfor %}
+</main>
+{% endblock %}

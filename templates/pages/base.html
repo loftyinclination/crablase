@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>Crablase</title>
+        <link rel="stylesheet" href={% block css %}{% endblock %} />
+        <link rel="icon" href="/cardstock.svg" />
+    </head>
+    <body>
+        <div class="page-header__container">
+            <header class="page-header centered-section">
+                <div class="home-link">
+                    <h1>
+                        <a href="/" class="home-link">Reblase</a>
+                    </h1>
+                </div>
+                <button>
+                    <span class="dark:hidden"
+                        >🌃<span class="visually-hidden">Dark mode</span></span
+                    >
+                    <span class="hidden dark:inline"
+                        >🌇<span class="visually-hidden">Light mode</span></span
+                    >
+                </button>
+                <a href="/seasons" class="header-link">Seasons</a>
+                <a href="/events" class="header-link">
+                    <span class="header-link__events__long"
+                        >Recent events</span
+                    ><span class="header-link__events__short"
+                        >Events</span>
+                </a>
+            </header>
+        </div>
+        {% block content %}{% endblock %}
+        <footer class="page-footer">
+            Brought to you by the
+            <a
+                href="https://www.blaseball.com/team/d2634113-b650-47b9-ad95-673f8e28e687"
+                >Data Witches</a
+            >.
+            <br />
+            <a href="https://twitter.com/InclinedLight">Author</a>
+            (Lofty) |
+            <a href="https://github.com/loftyinclination/crablase">Github</a> |
+            <a href="https://discord.gg/XKppCuj">SIBR Discord</a>
+        </footer>
+    </body>
+</html>
+
