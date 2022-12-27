@@ -11,7 +11,7 @@ use uuid::Uuid;
 
 pub type ResponseResult<T> = std::result::Result<T, Debug<anyhow::Error>>;
 
-const DEFAULT_NUMBER_OF_BASES: u8 = 3;
+const DEFAULT_NUMBER_OF_BASES: u8 = 4;
 
 #[get("/game.css")]
 pub fn game_css() -> (ContentType, &'static str) {
@@ -167,30 +167,40 @@ fn pack_base(update: &BlaseballGameUpdate) -> Vec<Base> {
         update.home_bases
     } else {
         update.away_bases
-    }).unwrap_or(DEFAULT_NUMBER_OF_BASES);
+    })
+    .unwrap_or(DEFAULT_NUMBER_OF_BASES) - 1;
     let highest_occupied_base = update.bases_occupied.iter().max().map_or(0, |n| *n);
 
-    let actual_number_of_bases = if number_of_bases_they_should_have < highest_occupied_base
-    {
+    let actual_number_of_bases = if number_of_bases_they_should_have < highest_occupied_base {
         highest_occupied_base
     } else {
         number_of_bases_they_should_have
     };
 
-    log::debug!("number_of_bases={}, number_of_bases_they_should_have={}, highest_occupied_base={}",
+    log::info!(
+        "number_of_bases={}, number_of_bases_they_should_have={}, highest_occupied_base={}",
         actual_number_of_bases,
         number_of_bases_they_should_have,
         highest_occupied_base,
     );
 
     let mut bases: Vec<Base> = Vec::with_capacity(actual_number_of_bases.into());
-    bases.resize_with(actual_number_of_bases.into(), || Base { runners: Vec::new() } );
+    bases.resize_with(actual_number_of_bases.into(), || Base {
+        runners: Vec::new(),
+    });
 
-    for (base_index, baserunner_id) in update.bases_occupied.iter().zip(update.base_runners.clone()) {
-        let base_index: usize = (*base_index).into();
-        let baserunner_name = get_player_name(baserunner_id).unwrap_or("UNKNOWN PLAYER".to_string());
+    for (base_index, baserunner_id) in update
+        .bases_occupied
+        .iter()
+        .zip(update.base_runners.clone())
+    {
+        let base_index: usize = (actual_number_of_bases - *base_index - 1).into();
+        let baserunner_name = get_player_name(baserunner_id)
+            .unwrap_or("UNKNOWN PLAYER".to_string());
         bases[base_index].runners.push(baserunner_name);
     }
+
+    log::info!("{:?}", bases);
 
     bases
 }
@@ -245,7 +255,70 @@ pub struct Update {
     bases: Vec<Base>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Base {
     runners: Vec<String>,
+}
+
+mod filters {
+    use crate::routes::game::{Base, Player, Update};
+    use std::fmt::Write;
+
+    const SQRT_2: f32 = 1.4142;
+
+    const BASE_SIZE: f32 = 12.0;
+    const HALF_BASE_SIZE: f32 = BASE_SIZE / 2.0;
+    const AXIS_SIZE: f32 = BASE_SIZE * SQRT_2;
+
+    const BASE_SPACING: f32 = 0.65;
+    const PADDING: f32 = AXIS_SIZE / 2.0 + 1.0;
+    const HOVER_TARGET_SIZE: f32 = AXIS_SIZE + 3.0;
+    const HALF_HOVER_TARGET_SIZE: f32 = HOVER_TARGET_SIZE / 2.0;
+
+    const TOTAL_HEIGHT: f32 = AXIS_SIZE * BASE_SPACING + PADDING * 2.0;
+
+    pub fn display_bases(update: &&Update) -> ::askama::Result<String> {
+        let mut string = String::from("<svg class=\"update-row__atbat__bases\" ");
+
+        let total_width =
+            AXIS_SIZE * BASE_SPACING * (update.bases.len() as f32 - 1.0) + PADDING * 2.0;
+        write!(string, "width=\"{total_width:.2}\" ")?;
+        write!(string, "height=\"{TOTAL_HEIGHT:.2}\" ")?;
+        write!(
+            string,
+            "viewBox=\"-{PADDING:.2} {:.2} {total_width:.2} {TOTAL_HEIGHT:.2}\"> ",
+            PADDING - TOTAL_HEIGHT
+        )?;
+
+        for (i, base) in update.bases.iter().enumerate() {
+            let base_index = update.bases.len() - i - 1;
+            let is_filled = base.runners.len() > 0;
+
+            write!(
+                string,
+                "<g transform=\"translate({x:.0} -{y:.0}) rotate(45)\">",
+                x = AXIS_SIZE * BASE_SPACING * i as f32,
+                y = if base_index % 2 == 0 { 0.0 } else { AXIS_SIZE * BASE_SPACING },
+            )?;
+
+            // bounding box
+            // FIXME: get hover effects working
+            string.push_str("<rect fill=\"transparent\" stroke=\"none\" z=\"-1\"");
+            write!(string, "x=\"-{HALF_HOVER_TARGET_SIZE:.2}\" y=\"-{HALF_HOVER_TARGET_SIZE:.2}\" width=\"{HOVER_TARGET_SIZE:.2}\" height=\"{HOVER_TARGET_SIZE:.2}\"></rect>")?;
+
+            // visible rect
+            string.push_str("<rect strokeWidth=\"1\" z=\"1\" stroke=\"var(--clr-neutral-100)\"");
+
+            if is_filled {
+                string.push_str("fill=\"var(--clr-neutral-100)\"");
+            } else {
+                string.push_str("fill=\"var(--clr-neutral-900)\"");
+            }
+            write!(string, "x=\"-{HALF_BASE_SIZE:.2}\" y=\"-{HALF_BASE_SIZE:.2}\" width=\"{BASE_SIZE}\" height=\"{BASE_SIZE}\"></rect>")?;
+            string.push_str("</g>");
+        }
+
+        string.push_str("</svg>");
+        Ok(string)
+    }
 }

@@ -99,7 +99,7 @@
           </figure>
           {% else %}{% endmatch %}
           <span class="update-row__atbat">
-          {% call base_display::base_display(update) %}
+          {{update|display_bases}}
           </span>
         </div>
         {% endfor %}
