@@ -13,16 +13,11 @@ const CHRONICLER_BASE: &str = "https://api.sibr.dev/chronicler/";
 
 pub async fn get_game_updates(game_id: Uuid) -> Result<Vec<ChronGameUpdate>, anyhow::Error> {
     // FIXME: work for semicentennial
-    let url = format!(
-        "{}v1/games/updates?game={}&count=1000",
-        CHRONICLER_BASE,
-        game_id.to_string()
-    );
+    let url = format!("{}v1/games/updates?game={}&count=1000", CHRONICLER_BASE, game_id.to_string());
 
     log::info!("requesting data for game with id {} from {}", game_id, url);
 
-    let requested_game_updates: Chron1Response<ChronGameUpdate> =
-        CLIENT.get(url).send().await?.json().await?;
+    let requested_game_updates: Chron1Response<ChronGameUpdate> = CLIENT.get(url).send().await?.json().await?;
 
     log::info!("got data for game {}", game_id);
 
@@ -31,22 +26,11 @@ pub async fn get_game_updates(game_id: Uuid) -> Result<Vec<ChronGameUpdate>, any
 }
 
 pub async fn get_team_version(team_id: Uuid) -> Result<ChronTeam, anyhow::Error> {
-    let url = format!(
-        "{}/v2/entities?type=Team&id={}",
-        CHRONICLER_BASE,
-        team_id.to_string()
-    );
+    let url = format!("{}/v2/entities?type=Team&id={}", CHRONICLER_BASE, team_id.to_string());
 
     log::info!("requesting entity for team with id {}", team_id);
 
-    let team_data: ChronTeam = CLIENT
-        .get(url)
-        .send()
-        .await?
-        .json::<Chron2Response<ChronTeam>>()
-        .await?
-        .items
-        .remove(1);
+    let team_data: ChronTeam = CLIENT.get(url).send().await?.json::<Chron2Response<ChronTeam>>().await?.items.remove(1);
 
     log_got_data(&team_data);
 
@@ -54,12 +38,7 @@ pub async fn get_team_version(team_id: Uuid) -> Result<ChronTeam, anyhow::Error>
 }
 
 fn log_got_data(team_data: &ChronTeam) -> () {
-    log::info!(
-        "got data for team {}",
-        team_data
-            .name_if_scattered()
-            .unwrap_or(&team_data.full_name)
-    );
+    log::info!("got data for team {}", team_data.name_if_scattered().unwrap_or(&team_data.full_name));
 }
 
 #[derive(Default, Deserialize)]

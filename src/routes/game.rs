@@ -22,11 +22,7 @@ pub fn game_css() -> (ContentType, &'static str) {
 pub async fn game(game_id: Uuid) -> ResponseResult<Option<RawHtml<String>>> {
     let game_data = chronicler::get_game_updates(game_id).await?;
 
-    log::info!(
-        "got game data for game {}, {} updates",
-        game_id,
-        game_data.len()
-    );
+    log::info!("got game data for game {}, {} updates", game_id, game_data.len());
 
     let mut is_first = true;
     let mut away_team_id: Option<Uuid> = None;
@@ -47,13 +43,7 @@ pub async fn game(game_id: Uuid) -> ResponseResult<Option<RawHtml<String>>> {
             home_team_id = Some(update.data.home_team_id);
         }
 
-        log::info!(
-            "considering update hash={}, inning={}, is_top={}, last_update={}",
-            update.hash,
-            update.data.inning,
-            update.data.is_top,
-            update.data.last_update
-        );
+        log::info!("considering update hash={}, inning={}, is_top={}, last_update={}", update.hash, update.data.inning, update.data.is_top, update.data.last_update);
 
         is_first = false;
         last_inning = update.data.inning;
@@ -73,11 +63,7 @@ pub async fn game(game_id: Uuid) -> ResponseResult<Option<RawHtml<String>>> {
             // update.data.is_top is negated because true > false
             .entry((update.data.inning, !update.data.is_top))
             .or_insert_with(|| {
-                log::info!(
-                    "creating new inning, inning={}, is_top={}",
-                    update.data.inning,
-                    update.data.is_top
-                );
+                log::info!("creating new inning, inning={}, is_top={}", update.data.inning, update.data.is_top);
                 let pitcher_name = (if update.data.is_top {
                     update.data.home_pitcher_id.map(get_player_name)
                 } else {
@@ -94,15 +80,9 @@ pub async fn game(game_id: Uuid) -> ResponseResult<Option<RawHtml<String>>> {
             });
 
         let batter = (if update.data.is_top {
-            update
-                .data
-                .home_batter_id
-                .map(|id| get_player_name(id).map(|name| Player { name }))
+            update.data.home_batter_id.map(|id| get_player_name(id).map(|name| Player { name }))
         } else {
-            update
-                .data
-                .away_batter_id
-                .map(|id| get_player_name(id).map(|name| Player { name }))
+            update.data.away_batter_id.map(|id| get_player_name(id).map(|name| Player { name }))
         })
         .flatten();
 
@@ -163,19 +143,10 @@ fn get_weather_for_index(index: u8) -> Weather {
 }
 
 fn pack_base(update: &BlaseballGameUpdate) -> Vec<Base> {
-    let number_of_bases_they_should_have = (if update.is_top {
-        update.home_bases
-    } else {
-        update.away_bases
-    })
-    .unwrap_or(DEFAULT_NUMBER_OF_BASES) - 1;
+    let number_of_bases_they_should_have = (if update.is_top { update.home_bases } else { update.away_bases }).unwrap_or(DEFAULT_NUMBER_OF_BASES) - 1;
     let highest_occupied_base = update.bases_occupied.iter().max().map_or(0, |n| *n);
 
-    let actual_number_of_bases = if number_of_bases_they_should_have < highest_occupied_base {
-        highest_occupied_base
-    } else {
-        number_of_bases_they_should_have
-    };
+    let actual_number_of_bases = if number_of_bases_they_should_have < highest_occupied_base { highest_occupied_base } else { number_of_bases_they_should_have };
 
     log::info!(
         "number_of_bases={}, number_of_bases_they_should_have={}, highest_occupied_base={}",
@@ -185,18 +156,11 @@ fn pack_base(update: &BlaseballGameUpdate) -> Vec<Base> {
     );
 
     let mut bases: Vec<Base> = Vec::with_capacity(actual_number_of_bases.into());
-    bases.resize_with(actual_number_of_bases.into(), || Base {
-        runners: Vec::new(),
-    });
+    bases.resize_with(actual_number_of_bases.into(), || Base { runners: Vec::new() });
 
-    for (base_index, baserunner_id) in update
-        .bases_occupied
-        .iter()
-        .zip(update.base_runners.clone())
-    {
+    for (base_index, baserunner_id) in update.bases_occupied.iter().zip(update.base_runners.clone()) {
         let base_index: usize = (actual_number_of_bases - *base_index - 1).into();
-        let baserunner_name = get_player_name(baserunner_id)
-            .unwrap_or("UNKNOWN PLAYER".to_string());
+        let baserunner_name = get_player_name(baserunner_id).unwrap_or("UNKNOWN PLAYER".to_string());
         bases[base_index].runners.push(baserunner_name);
     }
 
@@ -280,15 +244,10 @@ mod filters {
     pub fn display_bases(update: &&Update) -> ::askama::Result<String> {
         let mut string = String::from("<svg class=\"update-row__atbat__bases\" ");
 
-        let total_width =
-            AXIS_SIZE * BASE_SPACING * (update.bases.len() as f32 - 1.0) + PADDING * 2.0;
+        let total_width = AXIS_SIZE * BASE_SPACING * (update.bases.len() as f32 - 1.0) + PADDING * 2.0;
         write!(string, "width=\"{total_width:.2}\" ")?;
         write!(string, "height=\"{TOTAL_HEIGHT:.2}\" ")?;
-        write!(
-            string,
-            "viewBox=\"-{PADDING:.2} {:.2} {total_width:.2} {TOTAL_HEIGHT:.2}\"> ",
-            PADDING - TOTAL_HEIGHT
-        )?;
+        write!(string, "viewBox=\"-{PADDING:.2} {:.2} {total_width:.2} {TOTAL_HEIGHT:.2}\"> ", PADDING - TOTAL_HEIGHT)?;
 
         for (i, base) in update.bases.iter().enumerate() {
             let base_index = update.bases.len() - i - 1;
