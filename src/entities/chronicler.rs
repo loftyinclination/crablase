@@ -9,11 +9,11 @@ lazy_static::lazy_static! {
         .unwrap();
 }
 
-const CHRONICLER_BASE: &str = "https://api.sibr.dev/chronicler/";
+const CHRONICLER_BASE: &str = "https://api.sibr.dev/chronicler";
 
 pub async fn get_game_updates(game_id: Uuid) -> Result<Vec<ChronGameUpdate>, anyhow::Error> {
     // FIXME: work for semicentennial
-    let url = format!("{}v1/games/updates?game={}&count=1000", CHRONICLER_BASE, game_id.to_string());
+    let url = format!("{}/v1/games/updates?game={}&count=1000", CHRONICLER_BASE, game_id.to_string());
 
     log::info!("requesting data for game with id {} from {}", game_id, url);
 
@@ -23,6 +23,15 @@ pub async fn get_game_updates(game_id: Uuid) -> Result<Vec<ChronGameUpdate>, any
 
     // FIXME: should perform more requests if next_page is not none
     Ok(requested_game_updates.data)
+}
+
+pub async fn get_games_for_season_with_static_id(season_index: i8) -> Result<Vec<ChronGameUpdate>, anyhow::Error> {
+    let url = format!("{}/v1/games?season={}&sim=thisidisstaticyo", CHRONICLER_BASE, season_index).async?;
+
+    log::info!("requesting data for season with index {} and staticidyo from {}", season_index, url);
+
+    let requested_game_updates: Chron1Response<ChronGameUpdate> = CLIENT.get(url).send().await?.json().await?;
+    let requested_game_
 }
 
 pub async fn get_team_version(team_id: Uuid) -> Result<ChronTeam, anyhow::Error> {
